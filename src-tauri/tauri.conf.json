@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "MDPad",
+  "version": "1.0.2",
+  "identifier": "ru.mdpad.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "MDPad",
+        "width": 1200,
+        "height": 760,
+        "minWidth": 640,
+        "minHeight": 400,
+        "decorations": false,
+        "transparent": false,
+        "theme": "Dark",
+        "backgroundColor": "#0b0c10",
+        "dragDropEnabled": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "category": "Productivity",
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown"],
+        "name": "Markdown",
+        "description": "Markdown document",
+        "role": "Editor",
+        "mimeType": "text/markdown"
+      }
+    ],
+    "shortDescription": "Lightweight Markdown notepad",
+    "longDescription": "MDPad is a Windows notepad for .md and .txt files with Markdown preview, tabs, search and a dark theme.",
+    "publisher": "MDPad",
+    "copyright": "MDPad",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico", "icons/icon.icns", "icons/icon.png"],
+    "windows": {
+      "nsis": { "installMode": "currentUser", "languages": ["Russian", "English"] },
+      "wix": { "language": ["ru-RU"] }
+    }
+  }
+}

@@ -1,0 +1,595 @@
+/* =========================================================
+   MDPad — тёмная тема
+   ========================================================= */
+
+:root {
+  --bg-0: #0b0c10;        /* титульная панель, статус-бар */
+  --bg-1: #121319;        /* редактор */
+  --bg-2: #171922;        /* превью, панели, диалоги */
+  --bg-3: #1e2130;        /* ховер, кнопки */
+  --line: #252836;
+  --line-soft: rgba(255, 255, 255, 0.05);
+  --fg: #e6e8f0;
+  --fg-2: #a4a9bc;
+  --fg-3: #6b7085;
+  --accent: #8b8cff;
+  --accent-2: #60a5fa;
+  --accent-soft: rgba(139, 140, 255, 0.14);
+  --accent-ring: rgba(139, 140, 255, 0.55);
+  --danger: #f7768e;
+  --mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+  --ui: 'Segoe UI Variable', 'Segoe UI', 'Inter', system-ui, sans-serif;
+  --fs: 15px;
+  --radius: 10px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body {
+  background: var(--bg-0);
+  color: var(--fg);
+  font: 13px/1.4 var(--ui);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: rgba(139, 140, 255, 0.35); }
+:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+
+/* тонкие скроллбары */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.16); background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* =========================================================
+   Layout
+   ========================================================= */
+#app { display: grid; grid-template-rows: auto 1fr auto; }
+
+.titlebar {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  height: 52px;
+  padding: 0 8px 0 6px;
+  background: var(--bg-0);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  padding: 0 6px 0 8px;
+}
+.logo { width: 25px; height: 25px; filter: drop-shadow(0 0 8px rgba(139, 140, 255, 0.35)); }
+
+.tabs {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--line);
+}
+
+.pane { min-width: 0; min-height: 0; }
+.panes { display: flex; min-height: 0; }
+.editor-pane { flex: 1; overflow: hidden; display: flex; background: var(--bg-1); }
+.preview-pane {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-2);
+}
+#editor { flex: 1; min-width: 0; }
+
+/* режимы: split | markup | render */
+#app[data-mode="markup"] .preview-pane,
+#app[data-mode="markup"] .splitter { display: none; }
+#app[data-mode="markup"] .editor-pane { flex: 1 1 auto; }
+
+#app[data-mode="render"] .editor-pane,
+#app[data-mode="render"] .splitter { display: none; }
+
+#app[data-mode="split"] .splitter { display: block; }
+#app[data-mode="split"][data-collapsed="editor"] .editor-pane { display: none; }
+#app[data-mode="split"][data-collapsed="preview"] .preview-pane { display: none; }
+
+#app[data-kind="plain"] .view-ctl { display: none; }
+#app[data-kind="plain"] .divider-mode { display: none; }
+
+/* разделитель */
+.splitter {
+  display: none;
+  position: relative;
+  flex: 0 0 6px;
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--bg-2);
+}
+.splitter::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: var(--line);
+  transition: width 0.15s, background 0.15s;
+}
+.splitter:hover::after,
+.splitter.drag::after { width: 2px; background: var(--accent); }
+#app.dragging, #app.dragging * { cursor: col-resize !important; user-select: none; }
+
+/* кнопки вида */
+.view-ctl { display: flex; align-items: center; gap: 6px; }
+.icon-btn.on { background: var(--accent-soft); color: var(--accent); }
+
+
+
+/* =========================================================
+   Кнопки
+   ========================================================= */
+.ic {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease), transform 0.1s;
+}
+.icon-btn .ic { width: 20px; height: 20px; }
+.icon-btn:hover { background: var(--bg-3); color: var(--fg); }
+.icon-btn:active { transform: scale(0.94); }
+
+/* переключатель режимов */
+
+/* кнопки окна (только в Tauri, там нет системной рамки) */
+.winctl { display: flex; align-items: center; gap: 6px; margin-left: 6px; }
+.win-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.win-btn:hover { background: var(--bg-3); color: var(--fg); }
+.win-btn.win-close:hover { background: #c4425a; color: #fff; }
+.win-btn .ic { width: 20px; height: 20px; }
+
+/* общие кнопки в диалогах */
+dialog button {
+  font: inherit;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-3);
+  color: var(--fg);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+dialog button:hover { border-color: #3a3f55; background: #242839; }
+dialog button:active { transform: scale(0.97); }
+dialog button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  color: #0b0c12;
+  font-weight: 600;
+}
+dialog button.primary:hover { filter: brightness(1.08); background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+
+/* =========================================================
+   Вкладки
+   ========================================================= */
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  margin-top: 12px;
+  padding: 0 6px 0 12px;
+  min-width: 120px;
+  max-width: 220px;
+  border-radius: 9px 9px 0 0;
+  color: var(--fg-3);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.tab:hover { color: var(--fg-2); background: rgba(255, 255, 255, 0.03); }
+.tab.active {
+  color: var(--fg);
+  background: var(--bg-1);
+  box-shadow: inset 0 1px 0 var(--line), inset 1px 0 0 var(--line), inset -1px 0 0 var(--line);
+}
+.tab.active::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+.tab .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab .dot {
+  display: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 0 6px rgba(96, 165, 250, 0.7);
+}
+.tab.dirty .dot { display: inline-block; }
+.tab .close {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg-3);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.tab:hover .close, .tab.active .close { opacity: 1; }
+.tab .close:hover { background: var(--bg-3); color: var(--fg); }
+.tab .close .ic { width: 12px; height: 12px; stroke-width: 2.2; }
+
+/* =========================================================
+   CodeMirror
+   ========================================================= */
+.cm-editor { height: 100%; background: var(--bg-1); color: var(--fg); }
+.cm-editor.cm-focused { outline: none; }
+.cm-editor .cm-scroller {
+  font-family: var(--mono);
+  font-size: var(--fs);
+  line-height: 1.7;
+  font-variant-ligatures: none;
+}
+.cm-editor .cm-content { padding: 18px 0 40px; caret-color: var(--accent); }
+.cm-editor .cm-line { padding: 0 22px 0 18px; }
+.cm-editor .cm-cursor { border-left: 2px solid var(--accent); }
+.cm-editor .cm-gutters {
+  background: transparent;
+  color: var(--fg-3);
+  border: 0;
+  font-size: calc(var(--fs) - 2px);
+}
+.cm-editor .cm-gutterElement { padding: 0 12px 0 14px !important; }
+.cm-editor .cm-activeLine { background: rgba(255, 255, 255, 0.025); }
+.cm-editor .cm-activeLineGutter { background: transparent; color: var(--fg-2); }
+.cm-editor .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground { background: rgba(139, 140, 255, 0.22) !important; }
+.cm-editor .cm-selectionMatch { background: rgba(139, 140, 255, 0.12); }
+.cm-editor .cm-searchMatch { background: rgba(250, 204, 21, 0.18); border-radius: 3px; }
+.cm-editor .cm-searchMatch-selected { background: rgba(250, 204, 21, 0.4); }
+
+/* панель поиска */
+.cm-editor .cm-panels {
+  background: var(--bg-2);
+  color: var(--fg);
+  border-color: var(--line);
+}
+.cm-editor .cm-panels.cm-panels-bottom { border-top: 1px solid var(--line); }
+.cm-editor .cm-panel.cm-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+}
+.cm-editor .cm-panel.cm-search br { display: none; }
+.cm-editor .cm-panel.cm-search input.cm-textfield {
+  height: 28px;
+  min-width: 200px;
+  padding: 0 10px;
+  margin: 0;
+  background: var(--bg-1);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.cm-editor .cm-panel.cm-search input.cm-textfield:focus {
+  border-color: var(--accent-ring);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.cm-editor .cm-panel.cm-search button {
+  height: 28px;
+  margin: 0;
+  padding: 0 10px;
+  background: var(--bg-3);
+  color: var(--fg-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font: inherit;
+  cursor: pointer;
+}
+.cm-editor .cm-panel.cm-search button:hover { color: var(--fg); border-color: #3a3f55; }
+.cm-editor .cm-panel.cm-search label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--fg-2);
+  margin: 0;
+}
+.cm-editor .cm-panel.cm-search button[name="close"] {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* =========================================================
+   Markdown превью
+   ========================================================= */
+.markdown-body {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 44px 48px 120px;
+  font: 15.5px/1.75 var(--ui);
+  color: #d7dbe7;
+  overflow-wrap: break-word;
+}
+.markdown-body > *:first-child { margin-top: 0; }
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  color: #f1f3fa;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 1.6em 0 0.5em;
+}
+.markdown-body h1 { font-size: 2.1em; letter-spacing: -0.03em; }
+.markdown-body h2 {
+  font-size: 1.5em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--line);
+}
+.markdown-body h3 { font-size: 1.22em; }
+.markdown-body h4 { font-size: 1.05em; color: var(--fg-2); }
+.markdown-body p { margin: 0.9em 0; }
+.markdown-body a {
+  color: #93b8ff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(147, 184, 255, 0.35);
+  transition: border-color 0.15s;
+}
+.markdown-body a:hover { border-bottom-color: #93b8ff; }
+.markdown-body strong { color: #f4f6fb; font-weight: 650; }
+.markdown-body em { color: #cfd4e4; }
+.markdown-body del { color: var(--fg-3); }
+.markdown-body ul,
+.markdown-body ol { padding-left: 1.5em; margin: 0.8em 0; }
+.markdown-body li { margin: 0.25em 0; }
+.markdown-body li::marker { color: var(--fg-3); }
+.markdown-body ul.contains-task-list { list-style: none; padding-left: 0.2em; }
+.markdown-body li.task-list-item { display: flex; gap: 8px; align-items: flex-start; }
+.markdown-body .task-list-item input[type="checkbox"] {
+  margin-top: 0.45em;
+  accent-color: var(--accent);
+}
+.markdown-body code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  padding: 0.15em 0.4em;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #c4d8ff;
+}
+.markdown-body pre {
+  margin: 1.1em 0;
+  padding: 14px 18px;
+  overflow: auto;
+  border-radius: 12px;
+  background: var(--bg-0);
+  border: 1px solid var(--line);
+  line-height: 1.6;
+}
+.markdown-body pre code { padding: 0; background: none; color: #d7dbe7; font-size: 0.88em; }
+.markdown-body blockquote {
+  margin: 1.2em 0;
+  padding: 10px 18px;
+  color: #aab0c4;
+  background: rgba(139, 140, 255, 0.06);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+}
+.markdown-body blockquote p { margin: 0.4em 0; }
+.markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.2em 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.markdown-body th,
+.markdown-body td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  text-align: left;
+}
+.markdown-body th:last-child,
+.markdown-body td:last-child { border-right: 0; }
+.markdown-body tr:last-child td { border-bottom: 0; }
+.markdown-body th { background: var(--bg-3); color: #f1f3fa; font-weight: 600; }
+.markdown-body hr {
+  height: 1px;
+  margin: 2.2em 0;
+  border: 0;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+.markdown-body img { max-width: 100%; border-radius: 10px; }
+
+/* =========================================================
+   Статус-бар
+   ========================================================= */
+.statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  height: 28px;
+  padding: 0 12px;
+  background: var(--bg-0);
+  border-top: 1px solid var(--line);
+  color: var(--fg-3);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.status-info { font-variant-numeric: tabular-nums; }
+.status-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg-2);
+}
+.status-msg:not(:empty)::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* =========================================================
+   Диалоги
+   ========================================================= */
+dialog.modal {
+  min-width: 360px;
+  max-width: 420px;
+  padding: 24px 26px 22px;
+  color: var(--fg);
+  background: rgba(23, 25, 34, 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.3);
+  animation: pop 0.18s var(--ease);
+}
+dialog.modal[open]::backdrop { animation: fade 0.18s ease; }
+dialog.modal::backdrop { background: rgba(4, 5, 9, 0.6); backdrop-filter: blur(2px); }
+dialog.modal h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+dialog.modal p { margin: 0; color: var(--fg-3); line-height: 1.5; }
+dialog.modal .row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px -8px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--fg-2);
+  transition: background 0.15s, color 0.15s;
+}
+dialog.modal .row:hover { background: var(--bg-3); color: var(--fg); }
+dialog.modal input[type="checkbox"] {
+  appearance: none;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: #2b2f40;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+  margin-left: auto;
+  order: 2;
+}
+dialog.modal input[type="checkbox"]::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e6e8f0;
+  transition: transform 0.2s var(--ease);
+}
+dialog.modal input[type="checkbox"]:checked { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+dialog.modal input[type="checkbox"]:checked::after { transform: translateX(14px); }
+dialog.modal .row { flex-direction: row; }
+dialog.modal .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+@keyframes pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
