@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MDPad</title>
+  </head>
+  <body>
+    <div id="app" data-mode="split" data-kind="markdown">
+      <header class="titlebar" data-tauri-drag-region>
+        <div class="brand" title="MDPad" data-tauri-drag-region>
+          <img src="/logo.png" class="logo" alt="" aria-hidden="true" />
+        </div>
+
+        <div id="tabs" class="tabs" role="tablist" data-tauri-drag-region></div>
+
+        <div class="actions">
+          <button class="icon-btn" id="btn-new" data-i18n-title="newDoc" data-i18n-aria="newDoc">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+          </button>
+          <button class="icon-btn" id="btn-open" data-i18n-title="open" data-i18n-aria="open">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+          </button>
+          <button class="icon-btn" id="btn-save" data-i18n-title="save" data-i18n-aria="save">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" /><path d="M7 3v5h8V3M7 21v-7h10v7" /></svg>
+          </button>
+
+          <span class="divider divider-mode"></span>
+
+          <div class="view-ctl">
+            <button class="icon-btn" id="btn-markup" data-i18n-title="markup" data-i18n-aria="markup">
+              <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M12 4v16" /></svg>
+            </button>
+          </div>
+
+          <span class="divider divider-mode"></span>
+
+          <button class="icon-btn" id="btn-settings" data-i18n-title="settings" data-i18n-aria="settings">
+            <svg class="ic" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h10M18 18h2" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="16" cy="18" r="2" /></svg>
+          </button>
+
+          <div class="winctl">
+            <button class="win-btn" id="win-min" data-i18n-title="minimize" data-i18n-aria="minimize">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M5 12h14" /></svg>
+            </button>
+            <button class="win-btn" id="win-max" data-i18n-title="maximize" data-i18n-aria="maximize">
+              <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" /></svg>
+            </button>
+            <button class="win-btn win-close" id="win-close" data-i18n-title="close" data-i18n-aria="close">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="panes">
+        <section id="editor-pane" class="pane editor-pane"><div id="editor"></div></section>
+        <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" data-i18n-title="splitter"></div>
+        <section id="preview-pane" class="pane preview-pane"><article id="preview" class="markdown-body"></article></section>
+      </main>
+
+      <footer class="statusbar">
+        <span id="status-msg" class="status-msg"></span>
+        <span id="status-info" class="status-info"></span>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
