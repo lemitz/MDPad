@@ -307,6 +307,9 @@ function renderPreviewNow(): void {
     previewEl.innerHTML = '';
     return;
   }
+  // При скрытом превью не пересобираем весь Markdown после каждого ввода.
+  // renderAll() обновит её при возврате в render/split.
+  if (app.dataset.mode === 'markup' || (app.dataset.mode === 'split' && app.dataset.collapsed === 'preview')) return;
   renderPreview(previewEl, view.state.doc.toString());
 }
 

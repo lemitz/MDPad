@@ -451,22 +451,27 @@ dialog button.primary:hover { filter: brightness(1.08); background: linear-gradi
   border-radius: 0 10px 10px 0;
 }
 .markdown-body blockquote p { margin: 0.4em 0; }
-.markdown-body table {
-  display: block;
-  width: max-content;
+.markdown-body .table-scroll {
   max-width: 100%;
-  overflow-x: auto;
-  border-collapse: separate;
-  border-spacing: 0;
   margin: 1.2em 0;
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
 }
+.markdown-body table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
 .markdown-body th,
 .markdown-body td {
+  max-width: 36rem;
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
   border-right: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  vertical-align: top;
   text-align: left;
 }
 .markdown-body th:last-child,

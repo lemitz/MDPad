@@ -9,6 +9,14 @@ md.use(taskLists, { enabled: false, label: false });
 
 export function renderPreview(el: HTMLElement, src: string): void {
   el.innerHTML = DOMPurify.sanitize(md.render(src));
+  // Обёртка прокручивается по горизонтали, не ломая нативную раскладку таблицы.
+  el.querySelectorAll('table').forEach((table) => {
+    const scroll = document.createElement('div');
+    scroll.className = 'table-scroll';
+    scroll.tabIndex = 0;
+    table.replaceWith(scroll);
+    scroll.append(table);
+  });
   // Ссылки не должны навигировать само приложение
   el.querySelectorAll('a').forEach((a) => {
     a.target = '_blank';
