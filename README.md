@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/lemitz/MDPad/releases"><img src="https://img.shields.io/badge/version-1.0.2-8b8cff" alt="Version 1.0.2"></a>
+  <a href="https://github.com/lemitz/MDPad/releases"><img src="https://img.shields.io/badge/version-1.0.3-8b8cff" alt="Version 1.0.3"></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078d4" alt="Windows 10 / 11">
   <img src="https://img.shields.io/badge/built%20with-Tauri%202-24c8db" alt="Tauri 2">
   <img src="https://img.shields.io/badge/telemetry-none-2ea043" alt="No telemetry">
@@ -37,7 +37,8 @@ MDPad sits between Notepad and a full-blown Markdown IDE: it starts instantly, f
 **Preview**
 - CommonMark + GitHub Flavored Markdown: tables, task lists, strikethrough, autolinks
 - Rendered with [markdown-it](https://github.com/markdown-it/markdown-it); raw HTML in documents is not rendered and the output is sanitized with [DOMPurify](https://github.com/cure53/DOMPurify)
-- Live update as you type (debounced)
+- Wide tables scroll horizontally inside the preview; task-list text wraps normally
+- Live update as you type (debounced); rendering pauses while the preview is hidden
 
 **Layout**
 - Three views: **markup** (source only), **render** (preview only) and **split** (`Ctrl+Shift+V`)
@@ -89,7 +90,7 @@ The standard CodeMirror editing keys are available as well (`Tab` / `Shift+Tab` 
 Two flavours are produced by every build:
 
 - **Installer** — `MDPad_<version>_x64-setup.exe` (NSIS). Installs per-user, no admin rights needed, registers MDPad as an editor for `.md` / `.markdown` files. Available in English and Russian.
-- **Portable** — a single `mdpad.exe` that runs from anywhere.
+- **Portable** — `MDPad_<version>_x64-portable.exe` on the Releases page, or `mdpad.exe` when built locally.
 
 Grab them from the [Releases](https://github.com/lemitz/MDPad/releases) page or [build from source](#building-the-installer). MDPad needs the WebView2 Runtime, which is already present on Windows 11 and up-to-date Windows 10 systems; the installer takes care of it if it's missing.
 
@@ -126,7 +127,19 @@ npx tauri build
 
 The release profile is tuned for size (`opt-level = "s"`, LTO, symbols stripped).
 
-A GitHub Actions workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) builds on `windows-latest` whenever a `v*` tag is pushed (or on manual dispatch): it runs both test suites, builds the installer and uploads it as the `mdpad-windows` artifact.
+The [Windows workflow](.github/workflows/release.yml) runs for pull requests to `main`, version tags and manual dispatches. It checks that the npm, Rust and Tauri versions match, runs both test suites, builds the installer and portable executable, and uploads both plus `SHA256SUMS.txt` as the `mdpad-windows` artifact. **Only a pushed version tag publishes a GitHub Release** with the text from [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
+
+After merging the release pull request, publish v1.0.3 from the updated `main` branch:
+
+```bash
+git switch main
+git pull --ff-only
+npm run check:release -- v1.0.3
+git tag -a v1.0.3 -m "MDPad v1.0.3"
+git push origin v1.0.3
+```
+
+Do not tag the feature branch: the tag must point at the merged commit. A manual workflow run builds downloadable artifacts without publishing a release.
 
 ## Project structure
 

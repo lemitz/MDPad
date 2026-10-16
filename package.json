@@ -1,13 +1,14 @@
 {
   "name": "mdpad",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:release": "node scripts/check-release.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
@@ -28,6 +29,7 @@
     "@tauri-apps/cli": "^2.12.2",
     "@types/dompurify": "^3.0.5",
     "@types/markdown-it": "^14.2.0",
+    "jsdom": "^27.4.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^4.1.11"

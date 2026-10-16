@@ -1,6 +1,6 @@
 [package]
 name = "mdpad"
-version = "1.0.2"
+version = "1.0.3"
 description = "MDPad — лёгкий Markdown и текстовый редактор"
 authors = ["MDPad"]
 edition = "2021"
