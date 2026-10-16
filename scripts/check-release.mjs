@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 
-const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8').replace(/^\uFEFF/, '');
 const pkg = JSON.parse(read('../package.json'));
 const lock = JSON.parse(read('../package-lock.json'));
 const tauri = JSON.parse(read('../src-tauri/tauri.conf.json'));
@@ -27,8 +27,9 @@ for (const [file, actual] of Object.entries(versions)) {
   if (actual !== version) throw new Error(`${file}: expected ${version}, got ${actual ?? 'missing'}`);
 }
 
-if (!notes.startsWith(`# MDPad v${version}\n`)) {
-  throw new Error(`RELEASE_NOTES.md must start with # MDPad v${version}`);
+const noteLines = read('../RELEASE_NOTES.md').split(/\r?\n/);
+if (noteLines[0] !== `# MDPad v${version}`) {
+  throw new Error(`RELEASE_NOTES.md first line must be "# MDPad v${version}", got ${JSON.stringify(noteLines[0])}`);
 }
 
 const tag = process.argv[2] ?? (process.env.GITHUB_REF_TYPE === 'tag' ? process.env.GITHUB_REF_NAME : undefined);
