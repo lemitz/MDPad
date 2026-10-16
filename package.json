@@ -1,13 +1,14 @@
 {
   "name": "mdpad",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 4173",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:release": "node scripts/check-release.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

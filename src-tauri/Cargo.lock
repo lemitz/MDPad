@@ -1973,7 +1973,7 @@ dependencies = [
 
 [[package]]
 name = "mdpad"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "tauri",
  "tauri-build",
