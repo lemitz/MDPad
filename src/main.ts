@@ -8,7 +8,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { undo, redo } from '@codemirror/commands';
 import { renderPreview } from './preview';
+import { PreviewMap, editorTopLine, scrollEditorToLine } from './sync';
+import { startInlineEdit, finishInlineEdit, isInlineEditing, editableBlock, toggleTaskMarker } from './inline-edit';
 import { settings, saveSettings, DEFAULT_FONT_SIZE } from './settings';
 import { askUnsaved, openSettingsDialog } from './ui';
 import { t, applyStaticI18n } from './i18n';
@@ -54,6 +57,9 @@ let view!: EditorView;
 let previewTimer = 0;
 let sessionTimer = 0;
 let msgTimer = 0;
+const pmap = new PreviewMap(previewPane, previewEl, () => view.state.doc.lines);
+/** До какого момента игнорировать прокрутку панели — её двигаем мы сами, а не пользователь */
+const syncLock = { editor: 0, preview: 0 };
 
 const active = (): Doc | undefined => docs.find((d) => d.id === activeId);
 
@@ -80,7 +86,7 @@ function makeDoc(p: {
     state,
     // savedEmpty: восстановленный черновик считаем несохранённым
     saved: p.savedEmpty ? Text.of(['']) : state.doc,
-    scrollTop: 0,
+    topLine: 0,
   };
 }
 
@@ -98,16 +104,15 @@ function rekind(d: Doc, kind: DocKind): void {
 function switchTo(id: number): void {
   const next = docs.find((d) => d.id === id);
   if (!next) return;
+  finishInlineEdit();
   const prev = active();
-  if (prev) prev.scrollTop = view.scrollDOM.scrollTop;
+  if (prev) prev.topLine = currentTopLine();
 
   activeId = id;
   view.setState(next.state);
   applyEditorSettings(view);
   renderAll();
-  requestAnimationFrame(() => {
-    view.scrollDOM.scrollTop = next.scrollTop;
-  });
+  restoreTopLine(next.topLine);
   view.focus();
 }
 
@@ -219,15 +224,25 @@ async function saveActive(saveAs = false): Promise<void> {
 
 /* ================= Режимы и превью ================= */
 
-function setSplit(on: boolean): void {
-  mode = on ? 'split' : singleMode;
+/** Смена режима с сохранением позиции: то же место документа остаётся вверху */
+function changeMode(apply: () => void): void {
+  finishInlineEdit();
+  const keep = settings.syncScroll && active()?.kind === 'markdown';
+  const line = keep ? currentTopLine() : 0;
+  apply();
   renderAll();
+  if (keep) restoreTopLine(line);
+}
+
+function setSplit(on: boolean): void {
+  changeMode(() => (mode = on ? 'split' : singleMode));
 }
 
 function setSingle(markup: boolean): void {
-  singleMode = markup ? 'markup' : 'render';
-  mode = singleMode;
-  renderAll();
+  changeMode(() => {
+    singleMode = markup ? 'markup' : 'render';
+    mode = singleMode;
+  });
 }
 
 function togglePreview(): void {
@@ -265,8 +280,16 @@ function bindSplitter(): void {
     // магнитные края: тянем до упора — панель схлопывается полностью
     if (r < 0.04) r = 0;
     else if (r > 0.96) r = 1;
+    const collapsed = r <= 0 ? 'editor' : r >= 1 ? 'preview' : '';
+    const changed = collapsed !== (app.dataset.collapsed ?? '');
+    const line = changed ? currentTopLine() : 0;
     settings.splitRatio = r;
     applySplitRatio();
+    if (changed) {
+      // Свёрнутое превью не перерисовывалось — обновляем и ставим на ту же позицию
+      renderPreviewNow();
+      if (settings.syncScroll) restoreTopLine(line);
+    }
   });
   const end = () => {
     if (!dragging) return;
@@ -305,21 +328,105 @@ function renderPreviewNow(): void {
   const d = active();
   if (!d || d.kind !== 'markdown') {
     previewEl.innerHTML = '';
+    pmap.invalidate();
     return;
   }
+  // Пока блок правится прямо в превью, не перерисовываем его — иначе пропадёт поле ввода
+  if (isInlineEditing()) return;
   // При скрытом превью не пересобираем весь Markdown после каждого ввода.
   // renderAll() обновит её при возврате в render/split.
-  if (app.dataset.mode === 'markup' || (app.dataset.mode === 'split' && app.dataset.collapsed === 'preview')) return;
+  if (!previewVisible()) return;
   renderPreview(previewEl, view.state.doc.toString());
+  pmap.invalidate();
+  if (liveSync()) syncPreviewToEditor();
 }
 
-/** Синхронизация прокрутки: по доле прокрутки редактора */
-function onScroll(): void {
-  if (!settings.syncScroll || app.dataset.mode !== 'split') return;
+/* ----- Синхронизация позиции ----- */
+
+const isMarkdown = () => active()?.kind === 'markdown';
+function previewVisible(): boolean {
+  const m = app.dataset.mode;
+  return isMarkdown() && (m === 'render' || (m === 'split' && app.dataset.collapsed !== 'preview'));
+}
+function editorVisible(): boolean {
+  const m = app.dataset.mode;
+  return m === 'markup' || (m === 'split' && app.dataset.collapsed !== 'editor');
+}
+/** Живая синхронизация: в сплите видны обе панели */
+const liveSync = () => settings.syncScroll && editorVisible() && previewVisible();
+
+/** Текущая позиция (строка исходника) по видимой панели */
+function currentTopLine(): number {
+  if (editorVisible()) return editorTopLine(view);
+  if (previewVisible()) return previewPane.scrollTop <= 0 ? 0 : pmap.topToLine(previewPane.scrollTop);
+  return 0;
+}
+
+/** Ставит все видимые панели на строку исходника */
+function restoreTopLine(line: number): void {
+  const until = performance.now() + 300;
+  syncLock.editor = syncLock.preview = until;
+  if (previewVisible()) previewPane.scrollTop = line <= 0 ? 0 : pmap.lineToTop(line);
+  if (editorVisible()) scrollEditorToLine(view, line, false);
+}
+
+const atBottom = (el: HTMLElement) => el.scrollTop >= el.scrollHeight - el.clientHeight - 1;
+
+function syncPreviewToEditor(): void {
   const s = view.scrollDOM;
-  const max = s.scrollHeight - s.clientHeight;
-  const pmax = previewPane.scrollHeight - previewPane.clientHeight;
-  if (max > 0 && pmax > 0) previewPane.scrollTop = (s.scrollTop / max) * pmax;
+  syncLock.preview = performance.now() + 120;
+  previewPane.scrollTop =
+    s.scrollTop <= 0 ? 0 : atBottom(s) ? previewPane.scrollHeight : pmap.lineToTop(editorTopLine(view));
+}
+
+function syncEditorToPreview(): void {
+  const p = previewPane;
+  syncLock.editor = performance.now() + 120;
+  if (atBottom(p) && p.scrollTop > 0) view.scrollDOM.scrollTop = view.scrollDOM.scrollHeight;
+  else scrollEditorToLine(view, p.scrollTop <= 0 ? 0 : pmap.topToLine(p.scrollTop), true);
+}
+
+/** Прокрутка редактора → превью */
+function onScroll(): void {
+  if (!liveSync() || isInlineEditing() || performance.now() < syncLock.editor) return;
+  syncPreviewToEditor();
+}
+
+/** Прокрутка превью → редактор */
+function onPreviewScroll(): void {
+  if (!liveSync() || isInlineEditing() || performance.now() < syncLock.preview) return;
+  syncEditorToPreview();
+}
+
+/* ----- Правка прямо в превью ----- */
+
+function bindPreviewEditing(): void {
+  previewPane.addEventListener('scroll', onPreviewScroll, { passive: true });
+
+  // Двойной клик по блоку — правка его исходника; по пустому месту ниже текста — новый блок
+  previewPane.addEventListener('dblclick', (e) => {
+    if (!isMarkdown()) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('textarea, input, a')) return;
+    const block = editableBlock(target, previewEl);
+    const selected = window.getSelection()?.toString().trim() ?? '';
+    window.getSelection()?.removeAllRanges();
+    startInlineEdit(view, previewEl, block, selected, () => renderPreviewNow());
+    setMsg(t('inlineHint'));
+  });
+
+  // Чекбокс задачи переключает [ ] / [x] в исходнике
+  previewEl.addEventListener('change', (e) => {
+    const box = e.target as HTMLInputElement;
+    if (box.type !== 'checkbox') return;
+    const li = box.closest<HTMLElement>('li[data-line]');
+    const n = li ? +li.dataset.line! + 1 : 0;
+    if (!li || n > view.state.doc.lines) return;
+    const line = view.state.doc.line(n);
+    const next = toggleTaskMarker(line.text);
+    if (next === null) return;
+    view.dispatch({ changes: { from: line.from, to: line.to, insert: next }, userEvent: 'input.task' });
+  });
 }
 
 /* ================= Обновление UI ================= */
@@ -508,6 +615,13 @@ window.addEventListener(
     else if (code === 'Minus' || code === 'NumpadSubtract') zoom(-1);
     else if (code === 'Digit0' || code === 'Numpad0') zoom(0);
     else if (code === 'Comma') openSettings();
+    // В режиме рендера редактор скрыт: undo/redo правок, сделанных прямо в превью
+    else if (
+      (code === 'KeyZ' || code === 'KeyY') &&
+      app.dataset.mode === 'render' &&
+      !(e.target as HTMLElement).closest?.('textarea, input')
+    )
+      (code === 'KeyY' || e.shiftKey ? redo : undo)(view);
     else handled = false;
 
     if (handled) {
@@ -596,6 +710,7 @@ function init(): void {
   view = createView(editorEl, active()!.state);
   applyFont();
   bindSplitter();
+  bindPreviewEditing();
   renderAll();
   view.focus();
 

@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/lemitz/MDPad/releases"><img src="https://img.shields.io/badge/version-1.0.3-8b8cff" alt="Version 1.0.3"></a>
+  <a href="https://github.com/lemitz/MDPad/releases"><img src="https://img.shields.io/badge/version-1.1.0-8b8cff" alt="Version 1.1.0"></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078d4" alt="Windows 10 / 11">
   <img src="https://img.shields.io/badge/built%20with-Tauri%202-24c8db" alt="Tauri 2">
   <img src="https://img.shields.io/badge/telemetry-none-2ea043" alt="No telemetry">
@@ -39,11 +39,14 @@ MDPad sits between Notepad and a full-blown Markdown IDE: it starts instantly, f
 - Rendered with [markdown-it](https://github.com/markdown-it/markdown-it); raw HTML in documents is not rendered and the output is sanitized with [DOMPurify](https://github.com/cure53/DOMPurify)
 - Wide tables scroll horizontally inside the preview; task-list text wraps normally
 - Live update as you type (debounced); rendering pauses while the preview is hidden
+- Edit right in the preview: double-click a block (paragraph, heading, list item, table, code…) to edit its Markdown in place; double-click below the text to add a new block. `Ctrl+Enter` or clicking outside finishes, `Esc` reverts. Changes go straight into the document, so undo (`Ctrl+Z` works in render view too), the unsaved marker and split view stay in sync
+- Task-list checkboxes are clickable and toggle `[ ]` / `[x]` in the source
 
 **Layout**
 - Three views: **markup** (source only), **render** (preview only) and **split** (`Ctrl+Shift+V`)
 - Split view with a draggable divider — drag it to the edge to collapse a pane, double-click to reset to 50/50
-- Optional scroll sync between editor and preview
+- Optional position sync between editor and preview, mapped by source lines: two-way scroll sync in split view, and the same spot of the document stays on screen when switching markup ↔ render ↔ split or expanding a collapsed pane
+- Each tab remembers its position in every view
 - Frameless window with a custom title bar, dark theme only
 
 **Tabs**
@@ -129,14 +132,14 @@ The release profile is tuned for size (`opt-level = "s"`, LTO, symbols stripped)
 
 The [Windows workflow](.github/workflows/release.yml) runs for pull requests to `main`, version tags and manual dispatches. It checks that the npm, Rust and Tauri versions match, runs both test suites, builds the installer and portable executable, and uploads both plus `SHA256SUMS.txt` as the `mdpad-windows` artifact. **Only a pushed version tag publishes a GitHub Release** with the text from [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
 
-After merging the release pull request, publish v1.0.3 from the updated `main` branch:
+After merging the release pull request, publish v1.1.0 from the updated `main` branch:
 
 ```bash
 git switch main
 git pull --ff-only
-npm run check:release -- v1.0.3
-git tag -a v1.0.3 -m "MDPad v1.0.3"
-git push origin v1.0.3
+npm run check:release -- v1.1.0
+git tag -a v1.1.0 -m "MDPad v1.1.0"
+git push origin v1.1.0
 ```
 
 Do not tag the feature branch: the tag must point at the merged commit. A manual workflow run builds downloadable artifacts without publishing a release.

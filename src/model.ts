@@ -16,7 +16,8 @@ export interface Doc {
   state: EditorState;
   /** Текст на момент последнего сохранения */
   saved: Text;
-  scrollTop: number;
+  /** Позиция просмотра: дробная строка исходника у верхнего края (общая для всех режимов) */
+  topLine: number;
 }
 
 export const ENCODING_LABEL: Record<Encoding, string> = {

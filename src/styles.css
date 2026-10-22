@@ -488,6 +488,31 @@ dialog button.primary:hover { filter: brightness(1.08); background: linear-gradi
   background: linear-gradient(90deg, transparent, var(--line), transparent);
 }
 .markdown-body img { max-width: 100%; border-radius: 10px; }
+.markdown-body .task-list-item input[type="checkbox"] { cursor: pointer; }
+
+/* правка блока прямо в превью (двойной клик) */
+.markdown-body textarea.inline-edit {
+  display: block;
+  width: 100%;
+  min-height: 2.6em;
+  margin: 0.6em 0;
+  padding: 10px 14px;
+  resize: none;
+  overflow: hidden;
+  font: calc(var(--fs) - 1px)/1.6 var(--mono);
+  font-variant-ligatures: none;
+  color: var(--fg);
+  caret-color: var(--accent);
+  background: var(--bg-1);
+  border: 1px solid var(--accent-ring);
+  border-radius: 10px;
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  animation: fade 0.12s ease;
+}
+.markdown-body textarea.inline-edit::placeholder { color: var(--fg-3); }
+.markdown-body li.inline-editing { list-style: none; }
+.markdown-body li.inline-editing > textarea.inline-edit { margin-left: -1.5em; width: calc(100% + 1.5em); }
 
 /* =========================================================
    Статус-бар
