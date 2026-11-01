@@ -14,11 +14,11 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
@@ -51,7 +51,7 @@ jobs:
           }
           [System.IO.File]::WriteAllText((Join-Path $PWD 'release/SHA256SUMS.txt'), ($hashes -join "`n") + "`n", [System.Text.Encoding]::ASCII)
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mdpad-windows
           path: release/
@@ -64,8 +64,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: mdpad-windows
           path: release
