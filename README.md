@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/lemitz/MDPad/releases"><img src="https://img.shields.io/badge/version-1.1.0-8b8cff" alt="Version 1.1.0"></a>
+  <a href="https://github.com/lemitz/MDPad/releases"><img src="https://img.shields.io/github/v/release/lemitz/MDPad?label=version&color=8b8cff" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078d4" alt="Windows 10 / 11">
   <img src="https://img.shields.io/badge/built%20with-Tauri%202-24c8db" alt="Tauri 2">
   <img src="https://img.shields.io/badge/telemetry-none-2ea043" alt="No telemetry">
@@ -132,14 +132,14 @@ The release profile is tuned for size (`opt-level = "s"`, LTO, symbols stripped)
 
 The [Windows workflow](.github/workflows/release.yml) runs for pull requests to `main`, version tags and manual dispatches. It checks that the npm, Rust and Tauri versions match, runs both test suites, builds the installer and portable executable, and uploads both plus `SHA256SUMS.txt` as the `mdpad-windows` artifact. **Only a pushed version tag publishes a GitHub Release** with the text from [`RELEASE_NOTES.md`](RELEASE_NOTES.md).
 
-After merging the release pull request, publish v1.1.0 from the updated `main` branch:
+After merging the release pull request, publish the new version from the updated `main` branch (replace `vX.Y.Z` with the version from `package.json`):
 
 ```bash
 git switch main
 git pull --ff-only
-npm run check:release -- v1.1.0
-git tag -a v1.1.0 -m "MDPad v1.1.0"
-git push origin v1.1.0
+npm run check:release -- vX.Y.Z
+git tag -a vX.Y.Z -m "MDPad vX.Y.Z"
+git push origin vX.Y.Z
 ```
 
 Do not tag the feature branch: the tag must point at the merged commit. A manual workflow run builds downloadable artifacts without publishing a release.
@@ -152,6 +152,8 @@ src/
   main.ts                  documents, tabs, view modes, hotkeys, session restore
   editor.ts                CodeMirror 6 setup, dark highlight style, Ctrl+B / Ctrl+I
   preview.ts               markdown-it → DOMPurify → preview pane
+  inline-edit.ts           edit blocks in place in the preview
+  sync.ts                  source-line position sync between editor and preview
   encoding.ts              encoding / line-ending detection and encoding
   io.ts                    open & save dialogs, IPC calls into Rust
   i18n.ts                  English and Russian UI strings
@@ -164,8 +166,8 @@ src-tauri/
   src/fsops.rs             read_file / atomic write_file commands
   tauri.conf.json          window, CSP, bundle and file associations
   capabilities/            permissions granted to the main window
+scripts/check-release.mjs  release metadata check: versions, tag, release notes
 .github/workflows/         Windows release build
-ARCHITECTURE.md            design notes (in Russian)
 ```
 
 The split of responsibilities is deliberate: the Rust side knows nothing about Markdown or editing — it reads and writes bytes, handles window and dialog plumbing, and forwards file paths from the command line. Everything about documents, encodings and the UI lives in the TypeScript frontend.
@@ -173,3 +175,7 @@ The split of responsibilities is deliberate: the Rust side knows nothing about M
 ## Tech stack
 
 [Tauri 2](https://tauri.app) · [TypeScript](https://www.typescriptlang.org) · [Vite](https://vite.dev) · [CodeMirror 6](https://codemirror.net) · [markdown-it](https://github.com/markdown-it/markdown-it) · [DOMPurify](https://github.com/cure53/DOMPurify) · [Vitest](https://vitest.dev)
+
+## License
+
+MDPad is released under the [MIT License](LICENSE).
