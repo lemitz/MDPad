@@ -70,6 +70,8 @@ MDPad sits between Notepad and a full-blown Markdown IDE: it starts instantly, f
 - Settings (`Ctrl+,`): restore tabs on startup, wrap long lines, line numbers, sync scroll
 - No telemetry, no auto-updates, no network access at all (the content security policy only allows local resources)
 
+> **Documents are displayed, never run.** Raw HTML in documents is ignored, the preview is sanitized, and MDPad loads nothing from the internet, not even images. If you turn on session restore, unsaved drafts are kept unencrypted on your PC. See [SECURITY.md](SECURITY.md).
+
 ## Keyboard shortcuts
 
 | Action | Keys |
